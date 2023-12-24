@@ -6,21 +6,25 @@ import { useRoutes } from "react-router-dom";
 import "./App.css";
 
 function App() {
-    let element = useRoutes([
-        {
-            path: "/",
-            element: <Main />,
-        },
-        {
-            path: "/locker",
-            element: <Locker />,
-        },
-        {
-            path: "/unlocker",
-            element: <Unlocker />,
-        },
-    ]);
-    return <div className="App">{element}</div>;
+  let element = useRoutes([
+    {
+      path: "/main",
+      element: <Main />,
+    },
+    {
+      path: "/locker",
+      element: <Locker />,
+    },
+    {
+      path: "/unlocker",
+      element: <Unlocker />,
+    },
+  ]);
+  return (
+    <div className="App">
+      <div className="">{element}</div>
+    </div>
+  );
 }
 
 export default App;

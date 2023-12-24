@@ -1,20 +1,87 @@
-import React from "react";
+import React,{useState, useEffect} from "react";
 import Grid from "@mui/material/Unstable_Grid2";
-import logo from "../Images/logo.jpg";
+import logo from "../Images/logo.png";
 import Button from "@mui/material/Button";
 import { Link } from "react-router-dom";
+import axios from "axios";
 import makeBlockie from "ethereum-blockies-base64";
 import "./navbar.css";
-function Navbar({ onConnectWallet, isConnected, isConnecting, account }) {
+
+function Navbar() {
     const formatAddress = (address) => {
         if (!address) return "";
         return `${address.substring(0, 6)}...${address.substring(
             address.length - 6
         )}`;
     };
-    const blockieImage = account ? makeBlockie(account) : "";
+    const [isConnected, setIsConnected] = useState(false);
+    const [account, setAccount] = useState('');
+    const [userData, setUserData] = useState(null);
+    const [blockieImage, setBlockieImage] = useState('');
+    const handleConnectWallet = async () => {
+        if (window.ethereum) {
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                setAccount(accounts[0]);
+                setIsConnected(true);
+                setBlockieImage(makeBlockie(accounts[0])); // Generate blockie
+            } catch (error) {
+                console.error(error);
+            }
+        } else {
+            alert('MetaMask is not installed!');
+        }
+    };
+
+    const fetchUserData = async (address) => {
+        try {
+            const response = await axios.get(`[Your Backend URL]/api/path?address=${address}`);
+            setUserData(response.data);
+        } catch (error) {
+            console.error('Error fetching user data:', error);
+        }
+    };
+
+
+    useEffect(() => {
+        // Check if wallet is already connected
+        const checkIfWalletIsConnected = async () => {
+            if (window.ethereum) {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                if (accounts.length > 0) {
+                    setAccount(accounts[0]);
+                    setIsConnected(true);
+                    setBlockieImage(makeBlockie(accounts[0])); // Regenerate blockie
+                    localStorage.setItem('ethAddress', accounts[0]); // Store address in localStorage
+                } else {
+                    // Check localStorage
+                    const storedAddress = localStorage.getItem('ethAddress');
+                    if (storedAddress) {
+                        setAccount(storedAddress);
+                        setIsConnected(true); // Optionally, you can set this to false to require manual reconnection
+                        setBlockieImage(makeBlockie(storedAddress)); // Regenerate blockie from stored address
+                    }
+                }
+            }
+        };
+
+        checkIfWalletIsConnected();
+
+        // Listen for account changes
+        window.ethereum?.on('accountsChanged', (accounts) => {
+            if (accounts.length > 0) {
+                setAccount(accounts[0]);
+                setIsConnected(true);
+                setBlockieImage(makeBlockie(accounts[0]));
+                localStorage.setItem('ethAddress', accounts[0]);
+            } else {
+                setIsConnected(false);
+                localStorage.removeItem('ethAddress'); // Clear stored address
+            }
+        });
+    }, []);
     return (
-        <div className=" bg-black main-font">
+        <div className=" bg-black bg-opacity-0 main-font relative">
             <Grid container spacing={1}>
                 <Grid xs={2}>
                     <div className="flex justify-center space-x-3 my-1">
@@ -41,11 +108,9 @@ function Navbar({ onConnectWallet, isConnected, isConnecting, account }) {
                                 <Button
                                     variant="contained"
                                     color="secondary"
-                                    onClick={onConnectWallet}
-                                    disabled={isConnecting}>
-                                    {isConnecting
-                                        ? "Connecting..."
-                                        : "Connect Wallet"}
+                                    onClick={handleConnectWallet}
+                                    >
+                                        Connect Wallet
                                 </Button>
                             </div>
                         ) : (
@@ -80,7 +145,7 @@ function Navbar({ onConnectWallet, isConnected, isConnecting, account }) {
                                             />
                                         </div>
                                         <span className=" mt-1  shadow-2xl">
-                                            {formatAddress(account)}
+                                        {formatAddress(account)}
                                         </span>
                                     </div>
                                 </li>
